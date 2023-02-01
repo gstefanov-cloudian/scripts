@@ -159,6 +159,7 @@ while [ $counter -lt 2 ]; do
                 ;;
             *)
                 echo -e "${LRED}Invalid option selected. Please choose a valid option.${RESTORE}"
+                continue
                 ;;
         esac
     break
