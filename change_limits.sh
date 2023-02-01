@@ -72,7 +72,7 @@ change_nofile_limit() {
                 ;;
         esac
         for nofile in $nopen_files ; do
-            sed -i.bkp "s|$nopen_limit|$newlim|g" $nofile
+            sed -i "s|$nopen_limit|$newlim|g" $nofile
         done
     break
     done
@@ -86,7 +86,7 @@ update_20_nproc_conf() {
     read -r -p "${LYELLOW}Do you want to change it? [y/n]:${RESTORE} " inp2
     if [[ $inp2 =~ ^[yY][eE][sS]?$ ]]; then 
         for NODE in $(awk '{print $3}' ${HOSTS_FILE} | sort); do
-            ssh -i $SSH_KEY $NODE "sed -i.bkp 's|$curnp_limit|$NPROC_LIMIT|g' /etc/security/limits.d/20-nproc.conf"
+            ssh -i $SSH_KEY $NODE "sed -i 's|$curnp_limit|$NPROC_LIMIT|g' /etc/security/limits.d/20-nproc.conf"
         done
     elif [[ $inp2 =~ ^[nN][oO]?$ ]]; then
         echo "${WHITE}No changes applied to /etc/security/limits.d/20-nproc.conf${RESTORE}"
@@ -101,7 +101,7 @@ update_limits_conf() {
     read -r -p "${LYELLOW}Do you want to change it? [y/n]:${RESTORE} " inp3
     if [[ $inp3 =~ ^[yY][eE][sS]?$ ]]; then
         for NODE in $(awk '{print $3}' ${HOSTS_FILE} | sort); do
-            ssh -i $SSH_KEY $NODE "sed -i.bkp 's|$curnf_limit|$newlim|g' /etc/security/limits.conf"
+            ssh -i $SSH_KEY $NODE "sed -i 's|$curnf_limit|$newlim|g' /etc/security/limits.conf"
         done
     elif [[ $inp3 =~ ^[nN][oO]?$ ]]; then
         echo "${WHITE}No changes applied to /etc/security/limits.conf${RESTORE}"
@@ -116,7 +116,7 @@ update_system_conf() {
     read -r -p "${LYELLOW}Do you want to change it? [y/n]:${RESTORE} " inp4
     if [[ $inp4 =~ ^[yY][eE][sS]?$ ]]; then
         for NODE in $(awk '{print $3}' ${HOSTS_FILE} | sort); do
-            ssh -i $SSH_KEY $NODE "sed -i.bkp 's|$curNP_limit|$NPROC_LIMIT|g' /etc/systemd/system.conf"
+            ssh -i $SSH_KEY $NODE "sed -i 's|$curNP_limit|$NPROC_LIMIT|g' /etc/systemd/system.conf"
         done
     elif [[ $inp4 =~ ^[nN][oO]?$ ]]; then
         echo "${WHITE}No changes applied to /etc/systemd/system.conf${RESTORE}"
@@ -185,7 +185,7 @@ while [ $counter -lt 2 ]; do
     if [[ $inp1 == "y" || $inp1 == "Y" || $inp1 == "yes" || $inp1 == "Yes" ]] ; then
         case "$limit" in
             NPROC) 
-                sed "s|$nproc_limit|$NPROC_LIMIT|g" $nproc_files
+                sed -i "s|$nproc_limit|$NPROC_LIMIT|g" $nproc_files
                 update_20_nproc_conf
                 update_system_conf
                 echo $NPROC_LIMIT > /proc/sys/kernel/pid_max
@@ -207,5 +207,6 @@ while [ $counter -lt 2 ]; do
 counter=$((counter + 1)) # Loop once more for the other limit type
 done
       
-echo "================================${LGREEN}That was it${RESTORE}================================"
+echo "${WHITE}===============================[${RESTORE}${LGREEN}That was it${RESTORE}${WHITE}]===============================${RESTORE}"
 echo "${WHITE}Check fs.file-max in /etc/sysctl.conf in case of a persistent NOFILE limit.${RESTORE}"
+echo "${WHITE}===========================================================================${RESTORE}"
