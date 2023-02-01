@@ -10,16 +10,16 @@
 # Usage
 # ./chlimit.sh
 
-echo "${WHITE}=================================${RESTORE}"
-echo "${LGREEN}change_limits.sh was initiated...${RESTORE}"
-echo "${WHITE}=================================${RESTORE}"
-
 # Adding a few colors
 RESTORE=$(echo -en '\001\033[0m\002')
 LGREEN=$(echo -en '\001\033[01;32m\002')
 LYELLOW=$(echo -en '\001\033[01;33m\002')
 LRED=$(echo -en '\001\033[01;31m\002')
 WHITE=$(echo -en '\001\033[01;37m\002')
+
+echo "${WHITE}=================================${RESTORE}"
+echo "${LGREEN}change_limits.sh was initiated...${RESTORE}"
+echo "${WHITE}=================================${RESTORE}"
 
 export NPROC_LIMIT=65535
 
@@ -81,8 +81,9 @@ change_nofile_limit() {
 # Update the /etc/security/limits.d/20-nproc.conf files on all nodes 
 update_20_nproc_conf() {
     export curnp_limit=$(grep -Ew "cloudian (soft|hard) nproc" /etc/security/limits.d/20-nproc.conf | awk '{print$4}' | uniq)
+    echo
     echo "${LRED}The current limit in /etc/security/limits.d/20-nproc.conf is $curnp_limit ${RESTORE}"
-    read -r -p "${LYELLOW}Do you want to change it?:${RESTORE} " inp2
+    read -r -p "${LYELLOW}Do you want to change it? [y/n]:${RESTORE} " inp2
     if [[ $inp2 =~ ^[yY][eE][sS]?$ ]]; then 
         for NODE in $(awk '{print $3}' ${HOSTS_FILE} | sort); do
             ssh -i $SSH_KEY $NODE "sed -i.bkp 's|$curnp_limit|$NPROC_LIMIT|g' /etc/security/limits.d/20-nproc.conf"
@@ -95,8 +96,9 @@ update_20_nproc_conf() {
 # Update the /etc/security/limits.conf files on all nodes
 update_limits_conf() {
     export curnf_limit=$(grep -Ew "(soft|hard) nofile" /etc/security/limits.conf | awk '{print$4}' | uniq)
+    echo
     echo "${LRED}The current limit in /etc/security/limits.conf is $curnf_limit ${RESTORE}"
-    read -r -p "${LYELLOW}Do you want to change it?:${RESTORE} " inp3
+    read -r -p "${LYELLOW}Do you want to change it? [y/n]:${RESTORE} " inp3
     if [[ $inp3 =~ ^[yY][eE][sS]?$ ]]; then
         for NODE in $(awk '{print $3}' ${HOSTS_FILE} | sort); do
             ssh -i $SSH_KEY $NODE "sed -i.bkp 's|$curnf_limit|$newlim|g' /etc/security/limits.conf"
@@ -109,8 +111,9 @@ update_limits_conf() {
 # Update the /etc/systemd/system.conf files on all nodes
 update_system_conf() {
     export curNP_limit=$(grep ^LimitNPROC /etc/systemd/system.conf | awk -F '=' '{print$2}')
+    echo
     echo "${LRED}The current limit in /etc/systemd/system.conf is $curNP_limit ${RESTORE}"
-    read -r -p "${LYELLOW}Do you want to change it?:${RESTORE} " inp4
+    read -r -p "${LYELLOW}Do you want to change it? [y/n]:${RESTORE} " inp4
     if [[ $inp4 =~ ^[yY][eE][sS]?$ ]]; then
         for NODE in $(awk '{print $3}' ${HOSTS_FILE} | sort); do
             ssh -i $SSH_KEY $NODE "sed -i.bkp 's|$curNP_limit|$NPROC_LIMIT|g' /etc/systemd/system.conf"
@@ -145,6 +148,7 @@ while [ $counter -lt 2 ]; do
                 echo "${WHITE}Exiting the script.${RESTORE}"
                 exit 0
                 ;;
+                
         esac
     break
     done
