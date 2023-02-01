@@ -86,7 +86,7 @@ change_nofile_limit() {
 update_20_nproc_conf() {
     export curnp_limit=$(grep -Ew "cloudian (soft|hard) nproc" /etc/security/limits.d/20-nproc.conf | awk '{print$4}' | uniq)
     echo
-    echo "${WHITE}The current limit in ${LRED}/etc/security/limits.d/20-nproc.conf${WHITE} is${LRED} $curnp_limit.${RESTORE}"
+    echo "${WHITE}The current limit in ${LRED}/etc/security/limits.d/20-nproc.conf${WHITE} is${LRED} $curnp_limit ${RESTORE}"
     read -r -p "${LYELLOW}Do you want to change it? [y/n]:${RESTORE} " inp2
     if [[ $inp2 =~ ^[yY][eE][sS]?|y|Y$ ]]; then 
         for NODE in $(awk '{print $3}' ${HOSTS_FILE} | sort); do
@@ -103,7 +103,7 @@ update_20_nproc_conf() {
 update_limits_conf() {
     export curnf_limit=$(grep -Ew "(soft|hard) nofile" /etc/security/limits.conf | awk '{print$4}' | uniq)
     echo
-    echo "${WHITE}The current limit in ${LRED}/etc/security/limits.conf${WHITE} is${LRED} $curnf_limit.${RESTORE}"
+    echo "${WHITE}The current limit in ${LRED}/etc/security/limits.conf${WHITE} is${LRED} $curnf_limit ${RESTORE}"
     read -r -p "${LYELLOW}Do you want to change it? [y/n]:${RESTORE} " inp3
     if [[ $inp3 =~ ^[yY][eE][sS]?|y|Y$ ]]; then
         for NODE in $(awk '{print $3}' ${HOSTS_FILE} | sort); do
@@ -120,7 +120,7 @@ update_limits_conf() {
 update_system_conf() {
     export curNP_limit=$(grep ^LimitNPROC /etc/systemd/system.conf | awk -F '=' '{print$2}')
     echo
-    echo "${WHITE}The current limit in ${LRED}/etc/systemd/system.conf${WHITE} is${LRED} $curNP_limit.${RESTORE}"
+    echo "${WHITE}The current limit in ${LRED}/etc/systemd/system.conf${WHITE} is${LRED} $curNP_limit ${RESTORE}"
     read -r -p "${LYELLOW}Do you want to change it? [y/n]:${RESTORE} " inp4
     if [[ $inp4 =~ ^[yY][eE][sS]?|y|Y$ ]]; then
         for NODE in $(awk '{print $3}' ${HOSTS_FILE} | sort); do
@@ -177,7 +177,7 @@ while [ $counter -lt 2 ]; do
                 nproc_limit=$limit_choice
             fi
         echo
-        echo "${WHITE}The current limit is${LRED} $nproc_limit.${RESTORE}"
+        echo "${WHITE}The current limit is${LRED} $nproc_limit ${RESTORE}"
         echo
     elif [[ $limit == NOFILE ]]; then
         nopen_limit=$(grep 'LimitNOFILE=' $nopen_files | awk -F "=" '{print$2}' | uniq)
@@ -189,7 +189,7 @@ while [ $counter -lt 2 ]; do
                 nopen_limit=$limit_choice
             fi
         echo
-        echo "${WHITE}The current limit is${LRED} $nopen_limit.${RESTORE}"
+        echo "${WHITE}The current limit is${LRED} $nopen_limit ${RESTORE}"
         echo
     fi
 
@@ -203,14 +203,14 @@ while [ $counter -lt 2 ]; do
                 update_system_conf
                 echo $NPROC_LIMIT > /proc/sys/kernel/pid_max
                 echo
-                echo "${WHITE}The NPROC limit was increased to${LRED} $NPROC_LIMIT.${RESTORE}"
+                echo "${WHITE}The NPROC limit was increased to${LRED} $NPROC_LIMIT ${RESTORE}"
                 echo
                 ;;
             NOFILE) 
                 change_nofile_limit
                 update_limits_conf
                 echo
-                echo "${WHITE}The NOFILE limit was increased to${LRED} $newlim.${RESTORE}"
+                echo "${WHITE}The NOFILE limit was increased to${LRED} $newlim ${RESTORE}"
                 echo
                 echo "${WHITE}Check fs.file-max in /etc/sysctl.conf in case of a persistent NOFILE limit.${RESTORE}"
                 echo
