@@ -72,6 +72,7 @@ change_nofile_limit() {
                 ;;
             *)
             echo "${LRED}Invalid option selected. Please choose a valid option.${RESTORE}"
+            continue
             ;;
         esac
         for nofile in $nopen_files ; do
@@ -176,7 +177,7 @@ while [ $counter -lt 2 ]; do
                 nproc_limit=$limit_choice
             fi
         echo
-        echo "${LRED}The current limit is $nproc_limit ${RESTORE}"
+        echo "${WHITE}The current limit is${LRED} $nproc_limit.${RESTORE}"
         echo
     elif [[ $limit == NOFILE ]]; then
         nopen_limit=$(grep 'LimitNOFILE=' $nopen_files | awk -F "=" '{print$2}' | uniq)
@@ -212,6 +213,7 @@ while [ $counter -lt 2 ]; do
                 echo "${WHITE}The NOFILE limit was increased to${LRED} $newlim.${RESTORE}"
                 echo
                 echo "${WHITE}Check fs.file-max in /etc/sysctl.conf in case of a persistent NOFILE limit.${RESTORE}"
+                echo
                 ;;
         esac
     elif [[ $inp1 == "n" || $inp1 == "N" || $inp1 == "no" || $inp1 == "No" ]] ; then
