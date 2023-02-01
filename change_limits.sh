@@ -189,7 +189,7 @@ while [ $counter -lt 2 ]; do
                 nopen_limit=$limit_choice
             fi
         echo
-        echo "${LRED}The current limit is $nopen_limit.${RESTORE}"
+        echo "${WHITE}The current limit is${LRED} $nopen_limit.${RESTORE}"
         echo
     fi
 
