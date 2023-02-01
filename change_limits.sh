@@ -72,7 +72,7 @@ update_20_nproc_conf() {
     export curnp_limit=$(grep -Ew "cloudian (soft|hard) nproc" /etc/security/limits.d/20-nproc.conf | awk '{print$4}' | uniq)
     echo "The current limit in /etc/security/limits.d/20-nproc.conf is $curnp_limit"
     for NODE in $(awk '{print $3}' ${HOSTS_FILE} | sort); do
-        ssh -i $SSH_KEY $NODE 'sed "s|$curnp_limit|$NPROC_LIMIT|g" /etc/security/limits.d/20-nproc.conf'
+        ssh -i $SSH_KEY $NODE "sed 's|$curnp_limit|$NPROC_LIMIT|g' /etc/security/limits.d/20-nproc.conf"
     done
 }
 
@@ -81,7 +81,7 @@ update_limits_conf() {
     export curnf_limit=$(grep -Ew "(soft|hard) nofile" /etc/security/limits.conf | awk '{print$4}' | uniq)
     echo "The current limit in /etc/security/limits.conf is $curnf_limit"
     for NODE in $(awk '{print $3}' ${HOSTS_FILE} | sort); do
-        ssh -i $SSH_KEY $NODE 'sed "s|$curnf_limit|$newlim|g" /etc/security/limits.conf'
+        ssh -i $SSH_KEY $NODE "sed 's|$curnf_limit|$newlim|g' /etc/security/limits.conf"
     done
 }
 
@@ -90,7 +90,7 @@ update_system_conf() {
     export curNP_limit=$(grep ^LimitNPROC /etc/systemd/system.conf | awk -F '=' '{print$2}')
     echo "The current limit in /etc/systemd/system.conf is $curNP_limit"
     for NODE in $(awk '{print $3}' ${HOSTS_FILE} | sort); do
-        ssh -i $SSH_KEY $NODE 'sed "s|$curNP_limit|$NPROC_LIMIT|g" /etc/systemd/system.conf'
+        ssh -i $SSH_KEY $NODE "sed 's|$curNP_limit|$NPROC_LIMIT|g' /etc/systemd/system.conf"
     done
 }
 
