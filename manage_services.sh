@@ -2,7 +2,7 @@
 # Author: George S (gstefanov)
 # Date Created: 03/02/2023
 # Date Modified: 06/02/2023
-# Version: 1.0.0
+# Version: 1.0.2
 
 # Description:
 # This script is used to stop/start services on a node as per HyperStore documentation
