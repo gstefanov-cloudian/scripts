@@ -39,7 +39,7 @@ select action in Status Restart Start Stop Exit; do
                 echo "Restarting $svc"
                 service_mgmt restart $svc 
                 echo "Exit status: $?"
-                printf "%0.s=" $(seq 1 10)
+                printf "%0.s=" $(seq 1 14)
                 echo
             done
             ;;
@@ -48,7 +48,7 @@ select action in Status Restart Start Stop Exit; do
                 echo "Starting $svc"
                 service_mgmt start $svc  
                 echo "Exit status: $?"
-                printf "%0.s=" $(seq 1 10)
+                printf "%0.s=" $(seq 1 14)
                 echo
             done
             ;;
@@ -57,7 +57,7 @@ select action in Status Restart Start Stop Exit; do
                 echo "Stopping ${start_stop[svc]}"
                 service_mgmt stop ${start_stop[svc]}
                 echo "Exit status: $?"
-                printf "%0.s=" $(seq 1 10)
+                printf "%0.s=" $(seq 1 14)
                 echo
             done
             ;;
