@@ -8,7 +8,7 @@
 # This is an interactive script that can be used to change the NPROC and NOFILE limits
 
 # Usage
-# ./chlimit.sh
+# ./change_limits.sh
 
 # Adding a few colors
 RESTORE=$(echo -en '\001\033[0m\002')
