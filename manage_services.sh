@@ -63,7 +63,7 @@ select action in Status Restart Start Stop Exit; do
             ;;
         Exit)
             echo "Exiting the script."
-            exit 0
+            break
             ;;
         *)
             echo "Invalid option selected. Please choose a valid one."
