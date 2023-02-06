@@ -25,36 +25,47 @@ elif [[ -n $(systemctl status cloudian-sqs | grep running) ]]; then
 fi
 
 PS3="What action would you like to perform?: "
-select action in status restart start stop; do 
+select action in Status Restart Start Stop Exit; do 
     case "$action" in
-        status)
+        Status)
             for svc in "${restart_status[@]}"; do 
                 service_mgmt status $svc | head -n3
+                printf "%0.s=" $(seq 1 100)
             done
             ;;
-        restart)
+        Restart)
             for svc in "${restart_status[@]}"; do 
                 echo "Restarting $svc"
                 service_mgmt restart $svc 
+                echo "Exit status: $?"
+                printf "%0.s=" $(seq 1 10)
             done
             ;;
-        start)
+        Start)
             for svc in "${start_stop[@]}"; do 
                 echo "Starting $svc"
                 service_mgmt start $svc  
+                echo "Exit status: $?"
+                printf "%0.s=" $(seq 1 10)
             done
             ;;
-        stop)
-            for svc in $(seq $((${#start_stop[@]}-1)) -1 0); do 
-                echo "Stopping $svc"
-                service_mgmt stop $svc
+        Stop)
+            for ((svc=${#start_stop[@]}-1; svc>=0; svc--)); do 
+                echo "Stopping ${start_stop[svc]}"
+                service_mgmt stop ${start_stop[svc]}
+                echo "Exit status: $?"
+                printf "%0.s=" $(seq 1 10)
             done
+            ;;
+        Exit)
+            echo "Exiting the script."
+            exit 0
             ;;
         *)
             echo "Invalid option selected. Please choose a valid one."
             continue
             ;;
     esac    
-break
 done
 
+echo "Check cloudian-dnsmasq manually."
