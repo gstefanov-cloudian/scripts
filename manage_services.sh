@@ -31,6 +31,7 @@ select action in Status Restart Start Stop Exit; do
             for svc in "${restart_status[@]}"; do 
                 service_mgmt status $svc | head -n3
                 printf "%0.s=" $(seq 1 100)
+                echo
             done
             ;;
         Restart)
@@ -39,6 +40,7 @@ select action in Status Restart Start Stop Exit; do
                 service_mgmt restart $svc 
                 echo "Exit status: $?"
                 printf "%0.s=" $(seq 1 10)
+                echo
             done
             ;;
         Start)
@@ -47,6 +49,7 @@ select action in Status Restart Start Stop Exit; do
                 service_mgmt start $svc  
                 echo "Exit status: $?"
                 printf "%0.s=" $(seq 1 10)
+                echo
             done
             ;;
         Stop)
@@ -55,6 +58,7 @@ select action in Status Restart Start Stop Exit; do
                 service_mgmt stop ${start_stop[svc]}
                 echo "Exit status: $?"
                 printf "%0.s=" $(seq 1 10)
+                echo
             done
             ;;
         Exit)
