@@ -167,11 +167,11 @@ while [ $counter -lt 2 ]; do
     # Check what limit was chosen for modification, find what the current limit is and determine if it is the same across all files
     if [[ $limit == NPROC ]]; then
         nproc_limit=$(grep 'LimitNPROC=' $nproc_files | awk -F "=" '{print$2}' | uniq)
-        unique_values_func "${nproc_limit[@]}" NPROC
+        unique_values_func "${nproc_limit[@]}" nproc_limit
         echo_limit $nproc_limit
     elif [[ $limit == NOFILE ]]; then
         nopen_limit=$(grep 'LimitNOFILE=' $nopen_files | awk -F "=" '{print$2}' | uniq)
-        unique_values_func "${nopen_limit[@]}" NOFILE
+        unique_values_func "${nopen_limit[@]}" nopen_limit
         echo_limit $nopen_limit
     fi
 
