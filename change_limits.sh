@@ -111,7 +111,7 @@ update_node_limits_conf() {
 }
 
 unique_values_func() {
-    limit_array=("${!1}")
+    limit_array=("$1")
     local limit=$2
     unique_values=($(echo "${limit_array[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
     if [ ${#unique_values[@]} -ne ${#limit_array[@]} ]; then
