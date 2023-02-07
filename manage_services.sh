@@ -1,19 +1,43 @@
 #!/bin/bash
 # Author: George S (gstefanov)
 # Date Created: 03/02/2023
-# Date Modified: 06/02/2023
-# Version: 1.0.2
+# Date Modified: 07/02/2023
+# Version: 1.1.0
 
 # Description:
 # This script is used to stop/start services on a node as per HyperStore documentation
 
 # Usage
-# ./restart_services.sh
+# ./manage_services.sh
 
 service_mgmt() {
     local command=$1
     local service=$2
     systemctl $1 $2
+}
+
+perform_service_mgmt() {
+    local action=$1
+    local service_array=("${!2}")
+    local loop_type=$3
+
+    if [[ "$loop_type" == "forward" ]]; then
+        for svc in "${service_array[@]}"; do
+            echo "$action $svc"
+            service_mgmt $action $svc
+            echo "Exit status: $?"
+            printf "%0.s=" $(seq 1 14)
+            echo
+        done
+    elif [[ "$loop_type" == "reverse" ]]; then
+        for ((svc=${#service_array[@]}-1; svc>=0; svc--)); do 
+            echo "$action ${service_array[svc]}"
+            service_mgmt $action ${service_array[svc]}
+            echo "Exit status: $?"
+            printf "%0.s=" $(seq 1 14)
+            echo
+        done
+    fi
 }
 
 if [[ -z $(systemctl status cloudian-sqs | grep running) ]]; then
@@ -28,38 +52,16 @@ PS3="What action would you like to perform?: "
 select action in Status Restart Start Stop Exit; do 
     case "$action" in
         Status)
-            for svc in "${restart_status[@]}"; do 
-                service_mgmt status $svc | head -n3
-                printf "%0.s=" $(seq 1 100)
-                echo
-            done
+            perform_service_mgmt status restart_status[@] forward
             ;;
         Restart)
-            for svc in "${restart_status[@]}"; do 
-                echo "Restarting $svc"
-                service_mgmt restart $svc 
-                echo "Exit status: $?"
-                printf "%0.s=" $(seq 1 14)
-                echo
-            done
+            perform_service_mgmt restart restart_status[@] forward
             ;;
         Start)
-            for svc in "${start_stop[@]}"; do 
-                echo "Starting $svc"
-                service_mgmt start $svc  
-                echo "Exit status: $?"
-                printf "%0.s=" $(seq 1 14)
-                echo
-            done
+            perform_service_mgmt start start_stop[@] forward
             ;;
         Stop)
-            for ((svc=${#start_stop[@]}-1; svc>=0; svc--)); do 
-                echo "Stopping ${start_stop[svc]}"
-                service_mgmt stop ${start_stop[svc]}
-                echo "Exit status: $?"
-                printf "%0.s=" $(seq 1 14)
-                echo
-            done
+            perform_service_mgmt stop start_stop[@] reverse
             ;;
         Exit)
             echo "Exiting the script."

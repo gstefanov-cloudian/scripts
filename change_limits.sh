@@ -1,8 +1,8 @@
 #!/bin/bash
 # Author: George S (gstefanov)
 # Date Created: 20/01/2023
-# Date Modified: 01/02/2023
-# Version: 1.0.4
+# Date Modified: 07/02/2023
+# Version: 1.1.0
 
 # Description:
 # This is an interactive script that can be used to change the NPROC and NOFILE limits
@@ -82,55 +82,53 @@ change_nofile_limit() {
     done
 }
 
-# Update the /etc/security/limits.d/20-nproc.conf files on all nodes 
-update_20_nproc_conf() {
-    export curnp_limit=$(grep -Ew "cloudian (soft|hard) nproc" /etc/security/limits.d/20-nproc.conf | awk '{print$4}' | uniq)
+update_node_limits_conf() {
+    local file=$1
+    local limit=$2
+    local new_limit=$3
+    local input
+
+    if [[ $file == "/etc/security/limits.d/20-nproc.conf" ]]; then
+        local cur_limit=$(grep -Ew "cloudian (soft|hard) $limit" $file | awk '{print $4}' | uniq)
+    elif [[ $file == "/etc/systemd/system.conf" ]]; then
+        local cur_limit=$(grep "^LimitNPROC" $file | awk -F '=' '{print $2}')
+    elif [[ $file == "/etc/security/limits.conf" ]]; then
+        local cur_limit=$(grep -Ew "(soft|hard) $limit" $file | awk '{print$4}' | uniq)
+    fi
+
     echo
-    echo "${WHITE}The current limit in ${LRED}/etc/security/limits.d/20-nproc.conf${WHITE} is${LRED} $curnp_limit ${RESTORE}"
-    read -r -p "${LYELLOW}Do you want to change it? [y/n]:${RESTORE} " inp2
-    if [[ $inp2 =~ ^[yY][eE][sS]?|y|Y$ ]]; then 
-        for NODE in $(awk '{print $3}' ${HOSTS_FILE} | sort); do
-            ssh -i $SSH_KEY $NODE "sed -i 's|$curnp_limit|$NPROC_LIMIT|g' /etc/security/limits.d/20-nproc.conf"
+    echo "${WHITE}The current limit in${LRED} $file ${WHITE}is${LRED} $cur_limit ${RESTORE}"
+    read -r -p "${LYELLOW}Do you want to change it? [y/n]:${RESTORE} " input
+    if [[ $input =~ ^[yY][eE][sS]?|y|Y$ ]]; then
+        for node in $(awk '{print $3}' $HOSTS_FILE | sort); do
+        ssh -i $SSH_KEY $node "sed -i 's|$cur_limit|$new_limit|g' $file"
         done
-    elif [[ $inp2 =~ ^[nN][oO]?|n|N$ ]]; then
-        echo "${WHITE}No changes applied to /etc/security/limits.d/20-nproc.conf${RESTORE}"
+    elif [[ $input =~ ^[nN][oO]?$ ]]; then
+        echo "${WHITE}No changes applied to $file.${RESTORE}"
     else
-        echo "${LRED}Invalid input. No changes applied to /etc/security/limits.d/20-nproc.conf.${RESTORE}"
+        echo "${LRED}Invalid input. No changes applied to $file.${RESTORE}"
     fi
 }
 
-# Update the /etc/security/limits.conf files on all nodes
-update_limits_conf() {
-    export curnf_limit=$(grep -Ew "(soft|hard) nofile" /etc/security/limits.conf | awk '{print$4}' | uniq)
-    echo
-    echo "${WHITE}The current limit in ${LRED}/etc/security/limits.conf${WHITE} is${LRED} $curnf_limit ${RESTORE}"
-    read -r -p "${LYELLOW}Do you want to change it? [y/n]:${RESTORE} " inp3
-    if [[ $inp3 =~ ^[yY][eE][sS]?|y|Y$ ]]; then
-        for NODE in $(awk '{print $3}' ${HOSTS_FILE} | sort); do
-            ssh -i $SSH_KEY $NODE "sed -i 's|$curnf_limit|$newlim|g' /etc/security/limits.conf"
-        done
-    elif [[ $inp3 =~ ^[nN][oO]?|n|N$ ]]; then
-        echo "${WHITE}No changes applied to /etc/security/limits.conf${RESTORE}"
-    else
-        echo "${LRED}Invalid input. No changes applied to /etc/security/limits.conf.${RESTORE}"
+unique_values_func() {
+    limit_array=("${!1}")
+    local limit=$2
+    unique_values=($(echo "${limit_array[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
+    if [ ${#unique_values[@]} -ne ${#limit_array[@]} ]; then
+        echo "${LRED}Different limit values were found in the files:${RESTORE}"
+        echo ${unique_values[@]}
+        read -r -p "${LYELLOW}Which value do you want to use as the current limit?:${RESTORE} " limit_choice
+            if [[ $limit == NPROC ]]; then nproc_limit=$limit_choice
+            elif [[ $limit == NOFILE ]];then nopen_limit=$limit_choice
+            fi
     fi
 }
 
-# Update the /etc/systemd/system.conf files on all nodes
-update_system_conf() {
-    export curNP_limit=$(grep ^LimitNPROC /etc/systemd/system.conf | awk -F '=' '{print$2}')
+echo_limit() {
+    local limit=$1
     echo
-    echo "${WHITE}The current limit in ${LRED}/etc/systemd/system.conf${WHITE} is${LRED} $curNP_limit ${RESTORE}"
-    read -r -p "${LYELLOW}Do you want to change it? [y/n]:${RESTORE} " inp4
-    if [[ $inp4 =~ ^[yY][eE][sS]?|y|Y$ ]]; then
-        for NODE in $(awk '{print $3}' ${HOSTS_FILE} | sort); do
-            ssh -i $SSH_KEY $NODE "sed -i 's|$curNP_limit|$NPROC_LIMIT|g' /etc/systemd/system.conf"
-        done
-    elif [[ $inp4 =~ ^[nN][oO]?|n|N$ ]]; then
-        echo "${WHITE}No changes applied to /etc/systemd/system.conf${RESTORE}"
-    else
-        echo "${LRED}Invalid input. No changes applied to /etc/systemd/system.conf.${RESTORE}"
-    fi
+    echo "${WHITE}The current limit in *.erb files is${LRED} $limit ${RESTORE}"
+    echo
 }
 
 # 1. Start a while loop that would first allow you to select the limit you want to change
@@ -169,28 +167,12 @@ while [ $counter -lt 2 ]; do
     # Check what limit was chosen for modification, find what the current limit is and determine if it is the same across all files
     if [[ $limit == NPROC ]]; then
         nproc_limit=$(grep 'LimitNPROC=' $nproc_files | awk -F "=" '{print$2}' | uniq)
-        unique_values=($(echo "${nproc_limit[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
-            if [ ${#unique_values[@]} -ne ${#nproc_limit[@]} ]; then
-                echo "${LRED}Different limit values were found in the files:${RESTORE}"
-                echo ${unique_values[@]}
-                read -r -p "${LYELLOW}Which value do you want to use as the current limit?:${RESTORE} " limit_choice
-                nproc_limit=$limit_choice
-            fi
-        echo
-        echo "${WHITE}The current limit is${LRED} $nproc_limit ${RESTORE}"
-        echo
+        unique_values_func "${nproc_limit[@]}" NPROC
+        echo_limit $nproc_limit
     elif [[ $limit == NOFILE ]]; then
         nopen_limit=$(grep 'LimitNOFILE=' $nopen_files | awk -F "=" '{print$2}' | uniq)
-        unique_values=($(echo "${nopen_limit[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
-            if [ ${#unique_values[@]} -ne ${#nopen_limit[@]} ]; then
-                echo "${LRED}Different limit values were found in the files:${RESTORE}"
-                echo ${unique_values[@]}
-                read -r -p "${LYELLOW}Which value do you want to use as the current limit?:${RESTORE} " limit_choice
-                nopen_limit=$limit_choice
-            fi
-        echo
-        echo "${WHITE}The current limit is${LRED} $nopen_limit ${RESTORE}"
-        echo
+        unique_values_func "${nopen_limit[@]}" NOFILE
+        echo_limit $nopen_limit
     fi
 
     # Ask if you want to change the limit and update it everywhere
@@ -199,8 +181,8 @@ while [ $counter -lt 2 ]; do
         case "$limit" in
             NPROC) 
                 sed -i "s|$nproc_limit|$NPROC_LIMIT|g" $nproc_files
-                update_20_nproc_conf
-                update_system_conf
+                update_node_limits_conf "/etc/security/limits.d/20-nproc.conf" "nproc" $NPROC_LIMIT
+                update_node_limits_conf "/etc/systemd/system.conf" "NPROC" $NPROC_LIMIT
                 echo $NPROC_LIMIT > /proc/sys/kernel/pid_max
                 echo
                 echo "${WHITE}The NPROC limit was increased to${LRED} $NPROC_LIMIT ${RESTORE}"
@@ -208,7 +190,7 @@ while [ $counter -lt 2 ]; do
                 ;;
             NOFILE) 
                 change_nofile_limit
-                update_limits_conf
+                update_node_limits_conf "/etc/security/limits.conf" "nofile" $newlim
                 echo
                 echo "${WHITE}The NOFILE limit was increased to${LRED} $newlim ${RESTORE}"
                 echo
