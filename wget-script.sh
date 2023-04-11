@@ -72,5 +72,9 @@ echo "" > $output_file
 for extract in $(ls *.tar.gz); do
 	tar zxf $extract;
 done
-echo "$LYELLOW Logs extracted in $dir $RESTORE") &
+
+find . -name '*.tar.gz' -execdir tar -xzf {} \;
+
+echo "$LYELLOW Logs extracted in $dir $RESTORE"
+) &
 disown
