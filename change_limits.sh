@@ -21,7 +21,7 @@ echo "${WHITE}=================================${RESTORE}"
 echo "${LGREEN}change_limits.sh was initiated...${RESTORE}"
 echo "${WHITE}=================================${RESTORE}"
 
-export NPROC_LIMIT=65535
+export NPROC_LIMIT=262144
 
 # Get the common version without relying on HS CLI
 VERSION=$(/opt/cloudian/bin/cloudian version | grep Version | awk '{print$2}')
