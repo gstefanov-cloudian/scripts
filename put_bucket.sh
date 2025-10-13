@@ -11,16 +11,21 @@
 # ./put_bucket.sh
 set -euo pipefail
 
-DIR=$(dirname $0)
+DIR=$(pwd)
 BUCKETS=()
 REGION="region1"
 PROFILE="testing"
 PROFILE_MARKER="$DIR/${PROFILE}_configured"
 BUCKET_MARKER="$DIR/${PROFILE}_buckets_created"
+BUCKET_LIST_FILE="$DIR/${PROFILE}_buckets_list.txt"
 ENDPOINT_MARKER="$DIR/${PROFILE}_endpoint"
 
+if [[ ! -d /root/random ]]; then
+        mkdir -p /root/random
+fi
+
 if [[ ! -f /usr/local/bin/aws ]]; then
-        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.12.4.zip" -o "awscliv2.zip"
         unzip awscliv2.zip
         sudo ./aws/install
 fi
@@ -63,9 +68,18 @@ if [[ ! -f "$BUCKET_MARKER" ]]; then
                         echo "Skipped or failed to create $BUCKET_NAME (might already exist)."
                 fi
         done
-
+        printf "%s\n" "${BUCKETS[@]}" > "$BUCKET_LIST_FILE"
         touch "$BUCKET_MARKER"
-        echo "All buckets created. Marker stored at $BUCKET_MARKER."
+        echo "All buckets created. Stored: $BUCKET_LIST_FILE."
+else
+        # Subsequent run: load existing bucket names
+        if [[ -f "$BUCKET_LIST_FILE" ]]; then
+                mapfile -t BUCKETS < "$BUCKET_LIST_FILE"
+                echo "Loaded ${#BUCKETS[@]} existing buckets from $BUCKET_MARKER"
+        else
+                echo "Marker exists but bucket list file is missing! Exiting."
+                exit 1
+        fi
 fi
 
 read -p "How many objects would you like to be uploaded?: " OBJ_COUNT
@@ -75,8 +89,8 @@ for n in $(seq 1 "$OBJ_COUNT"); do
         dd if=/dev/urandom of=/root/random/file$(echo $RANDOM-$RANDOM).bin bs=1 count="$OBJ_SIZE" &>/dev/null
 done
 
-for BUCKET in $"${BUCKETS[@]}"; do
-        /usr/local/bin/aws --no-verify-ssl --only-show-errors --endpoint=${AWS_ENDPOINT} --profile "$PROFILE" s3 cp /root/random/ s3://"$BUCKET" --recursive
+for BUCKET in "${BUCKETS[@]}"; do
+        /usr/local/bin/aws --no-verify-ssl --only-show-errors --endpoint="$AWS_ENDPOINT" --profile "$PROFILE" s3 cp /root/random/ s3://"$BUCKET" --recursive --no-checksum
         sleep 1
 done
 
