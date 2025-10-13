@@ -9,9 +9,10 @@
 
 # Usage
 # ./auto_purge.sh <file>
-set -euo pipefail
+# set -euo pipefail
 
 # Variables
+DIR="$(cd "$(dirname "$0")" && pwd)"
 BUCKET_LIST=$1
 PURGE_HOME=/root/purge
 PURGE=/root/cloudian-bucket-tools/bin/cloudian-bucket-purge
@@ -48,4 +49,4 @@ while IFS= read -r BUCKET; do
     purge_api
     $PURGE -b "$BUCKET"
     $PURGE -b "$BUCKET" -file ${BUCKET}.purged.partitions.1.log -t 15 -dry n
-done < "$BUCKET_LIST"
+done < "${DIR}/${BUCKET_LIST}"
