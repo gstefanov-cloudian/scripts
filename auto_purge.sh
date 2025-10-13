@@ -9,12 +9,12 @@
 
 # Usage
 # ./auto_purge.sh <file>
+set -euo pipefail
 
 # Variables
 BUCKET_LIST=$1
 PURGE_HOME=/root/purge
 PURGE=/root/cloudian-bucket-tools/bin/cloudian-bucket-purge
-PART_LOG=${BUCKET}.purged.partitions.1.log
 
 # Checks
 if [ $# -ne 1 ]; then
@@ -40,10 +40,12 @@ purge_api () {
 }
 
 # Run
-mkdir $PURGE_HOME && cd $PURGE_HOME
+mkdir -p "$PURGE_HOME"
+cd "$PURGE_HOME"
 
 while IFS= read -r BUCKET; do
+    [[ -z "$BUCKET" ]] && continue  # skip empty lines
     purge_api
     $PURGE -b "$BUCKET"
-    $PURGE -b "$BUCKET" -file $PART_LOG -t 15 -dry n
+    $PURGE -b "$BUCKET" -file ${BUCKET}.purged.partitions.1.log -t 15 -dry n
 done < "$BUCKET_LIST"
