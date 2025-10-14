@@ -1,8 +1,8 @@
 #!/bin/bash
 # Author: George S (gstefanov)
 # Date Created: 10/10/2025
-# Date Modified: 
-# Version: 1.2
+# Date Modified: 14/10/2025
+# Version: 1.3
 
 # Description:
 # Automates the purge of multiple buckets
@@ -55,18 +55,14 @@ cd "$PURGE_HOME" || exit
 
 while IFS= read -r BUCKET <&3 || [[ -n "$BUCKET" ]] ; do
     [[ -z "$BUCKET" ]] && continue  # skip empty lines
-    purge_api
-    $PURGE -b "$BUCKET"
-    nohup $PURGE -b "$BUCKET" -file "${BUCKET}.purged.partitions.1.log" -t 15 -dry n &
-    # Capture background PID 
-    jobs
-    PURGE_PID=$!
-    echo "Started background purge for ${BUCKET} (PID: $PURGE_PID)"
-    # Check if a purge is running
-    while kill -0 "$PURGE_PID" 2>/dev/null; do
-        echo "$(date '+%F %T') - Purge for ${BUCKET} still running. Sleeping 30 minutes..."
-        sleep 1 #1800  # 30 minutes
-    done
-    # Finish
-    echo "$(date '+%F %T') - Purge for ${BUCKET} finished, continuing to next bucket."
-done 3< "${DIR}/${BUCKET_LIST}"
+    mkdir -p "${PURGE_HOME}/${BUCKET}_purge" ; cd "${PURGE_HOME}/${BUCKET}_purge" || exit
+    LOGFILE="${PURGE_HOME}/${BUCKET}_purge/purge_script.log"
+    {
+      purge_api
+      $PURGE -b "$BUCKET"
+      $PURGE -b "$BUCKET" -file "${BUCKET}.purged.partitions.1.log" -t 15 -dry n
+    } 2>&1 | tee -a "$LOGFILE"
+    cd "$PURGE_HOME" || exit
+done 3< "${DIR}/${BUCKET_LIST}" 
+
+echo "=== Script finished at $(date '+%F %T') ==="
