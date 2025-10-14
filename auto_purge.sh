@@ -36,6 +36,11 @@ if [ ! -s "$BUCKET_LIST" ]; then
   exit 1
 fi
 
+if [ ! -f "$PURGE" ]; then
+  echo "Purge tool not found at $PURGE"
+  exit 1
+fi
+
 # Functions
 purge_api () {
     local USER PASS
