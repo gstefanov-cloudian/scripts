@@ -2,7 +2,7 @@
 # Author: George S (gstefanov)
 # Date Created: 10/10/2025
 # Date Modified: 
-# Version: 1.1
+# Version: 1.2
 
 # Description:
 # Automates the purge of multiple buckets
@@ -40,22 +40,33 @@ fi
 purge_api () {
     local USER PASS
     if [[ "${MASTER}" != "${HOSTNAME}" ]] ; then
-      USER=$(ssh -i /export/home/cloudian/cloudian-installation-key "${MASTER}" "hsctl config get admin.auth.username")
-      PASS=$(ssh -i /export/home/cloudian/cloudian-installation-key "${MASTER}" "hsctl config get admin.auth.password")
+      USER=$(ssh -o StrictHostKeyChecking=no -i /export/home/cloudian/cloudian-installation-key "${MASTER}" "hsctl config get admin.auth.username")
+      PASS=$(ssh -o StrictHostKeyChecking=no -i /export/home/cloudian/cloudian-installation-key "${MASTER}" "hsctl config get admin.auth.password")
     else
       USER=$(hsctl config get admin.auth.username)
       PASS=$(hsctl config get admin.auth.password)
     fi
-    curl -X POST -k -u "${USER}:${PASS}" https://localhost:19443/bucketops/purge?bucketName="${BUCKET}" </dev/null
+    curl -X POST -k -u "${USER}:${PASS}" https://localhost:19443/bucketops/purge?bucketName="${BUCKET}"
 }
 
 # Run
 mkdir -p "$PURGE_HOME"
 cd "$PURGE_HOME" || exit
 
-while read -r BUCKET; do
+while IFS= read -r BUCKET <&3 || [[ -n "$BUCKET" ]] ; do
     [[ -z "$BUCKET" ]] && continue  # skip empty lines
     purge_api
-    $PURGE -b "$BUCKET" </dev/null
-    $PURGE -b "$BUCKET" -file "${BUCKET}.purged.partitions.1.log" -t 15 -dry n </dev/null
-done < "${DIR}/${BUCKET_LIST}"
+    $PURGE -b "$BUCKET"
+    nohup $PURGE -b "$BUCKET" -file "${BUCKET}.purged.partitions.1.log" -t 15 -dry n &
+    # Capture background PID 
+    jobs
+    PURGE_PID=$!
+    echo "Started background purge for ${BUCKET} (PID: $PURGE_PID)"
+    # Check if a purge is running
+    while kill -0 "$PURGE_PID" 2>/dev/null; do
+        echo "$(date '+%F %T') - Purge for ${BUCKET} still running. Sleeping 30 minutes..."
+        sleep 1 #1800  # 30 minutes
+    done
+    # Finish
+    echo "$(date '+%F %T') - Purge for ${BUCKET} finished, continuing to next bucket."
+done 3< "${DIR}/${BUCKET_LIST}"
